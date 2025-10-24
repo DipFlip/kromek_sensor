@@ -1,0 +1,14 @@
+# High Resolution Configuration
+# For spectroscopy and detailed energy analysis
+# Uses maximum bins and longer integration for better statistics
+
+kromek_hidapi_node:
+  ros__parameters:
+    integration_seconds: 10     # Long integration for good statistics
+    num_bins: 4096              # Full resolution - all 4096 channels
+    gain: -1                    # Use device default
+    lld: 100                    # Filter low energy noise
+    publish_rate_hz: 0.1        # Publish every 10 seconds
+    publish_histogram: true
+    publish_sum: true
+    publish_device_status: true # Monitor detector health

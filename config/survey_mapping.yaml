@@ -1,0 +1,14 @@
+# Survey/Mapping Configuration
+# Balanced settings for mobile radiation mapping
+# Good for SLAM applications with radiation overlay
+
+kromek_hidapi_node:
+  ros__parameters:
+    integration_seconds: 2      # 2 second integration - balance between speed and statistics
+    num_bins: 50                # Medium resolution
+    gain: 120                   # Slightly elevated gain for sensitivity
+    lld: 80                     # Filter background noise
+    publish_rate_hz: 1.0        # Update every second
+    publish_histogram: true     # Keep histogram for isotope ID
+    publish_sum: true           # Total counts for mapping
+    publish_device_status: false

@@ -1,0 +1,14 @@
+# Real-Time Monitoring Configuration
+# For fast updates and anomaly detection
+# Minimal bins, fast updates, counts only
+
+kromek_hidapi_node:
+  ros__parameters:
+    integration_seconds: 1      # 1 second integration
+    num_bins: 20                # Low resolution - just 20 bins
+    gain: -1                    # Use device default
+    lld: 50                     # Basic noise filtering
+    publish_rate_hz: 10.0       # Publish 10 times per second (partial histograms)
+    publish_histogram: false    # Don't need histogram for counting
+    publish_sum: true           # Just total counts
+    publish_device_status: false

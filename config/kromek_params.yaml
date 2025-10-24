@@ -1,0 +1,39 @@
+# Kromek Sigma50 Configuration
+# All parameters are optional - defaults will be used if not specified
+
+kromek_hidapi_node:
+  ros__parameters:
+    # Integration time in seconds (how long to collect data before publishing)
+    # Lower = faster updates but less statistics, Higher = more counts but slower updates
+    # Default: 1 second
+    integration_seconds: 1
+
+    # Number of histogram bins for energy spectrum (1-4096)
+    # Lower values reduce data size and bandwidth, higher values give better energy resolution
+    # Default: 100 bins
+    num_bins: 100
+
+    # Detector gain (20-250)
+    # Set to -1 to read from device and not change
+    # Higher gain = more sensitive to weak signals but more electronic noise
+    # Typical range: 100-150 for most applications
+    # Default: -1 (read from device)
+    gain: -1
+
+    # Lower Level Discriminator - energy threshold (0-4095 ADC channels)
+    # Set to -1 to read from device and not change
+    # Filters out low-energy noise and electronic pulses
+    # Typical values: 50-200 depending on noise level
+    # Default: -1 (read from device)
+    lld: -1
+
+    # Publishing rate in Hz
+    # Set to -1.0 to use 1/integration_seconds
+    # Can be set higher than integration rate for partial histogram updates
+    # Default: -1.0 (matches integration time)
+    publish_rate_hz: -1.0
+
+    # Enable/disable specific publishers
+    publish_histogram: true      # Energy histogram on /kromek/raw
+    publish_sum: true            # Total counts on /kromek/sum
+    publish_device_status: false # Device settings on /kromek/status (gain/bias/LLD)
