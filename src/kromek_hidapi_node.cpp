@@ -70,7 +70,8 @@ public:
         }
 
         // Create publishers
-        sum_pub_ = this->create_publisher<std_msgs::msg::Int64>("kromek/sum", 10);
+        sum_counts_pub_ = this->create_publisher<std_msgs::msg::Int64>("kromek/sum_counts", 10);
+        sum_spectrum_pub_ = this->create_publisher<std_msgs::msg::UInt32MultiArray>("kromek/sum_spectrum", 10);
         info_pub_ = this->create_publisher<std_msgs::msg::UInt32MultiArray>("kromek/info", 10);
         raw_pub_ = this->create_publisher<std_msgs::msg::UInt32MultiArray>("kromek/raw", 10);
         status_pub_ = this->create_publisher<std_msgs::msg::UInt32MultiArray>("kromek/status", 10);
@@ -170,6 +171,7 @@ public:
 
         // Initialize data structures
         histograms_.resize(num_devices_ * DET_CHANNELS, 0);
+        accumulated_histograms_.resize(num_devices_ * DET_CHANNELS, 0);
 
         // Publish device info
         publishDeviceInfo();
@@ -319,6 +321,7 @@ private:
                     uint16_t channel = ((buf[offset] << 4) & 0xFF0) + ((buf[offset + 1] >> 4) & 0xF);
                     if (channel < DET_CHANNELS) {
                         histograms_[dev_idx * DET_CHANNELS + channel]++;
+                        accumulated_histograms_[dev_idx * DET_CHANNELS + channel]++;
                         total_counts++;
                     }
                     offset += 2;
@@ -326,14 +329,14 @@ private:
             }
         }
 
-        // Publish total counts
+        // Publish total counts from this period
         if (publish_sum_) {
             auto sum_msg = std_msgs::msg::Int64();
             sum_msg.data = total_counts;
-            sum_pub_->publish(sum_msg);
+            sum_counts_pub_->publish(sum_msg);
         }
 
-        // Publish histogram (rebinned to num_bins_)
+        // Publish histogram from this period only (rebinned to num_bins_)
         if (publish_histogram_) {
             auto raw_msg = std_msgs::msg::UInt32MultiArray();
             raw_msg.data.resize(num_devices_ * num_bins_, 0);
@@ -355,6 +358,32 @@ private:
 
             raw_pub_->publish(raw_msg);
         }
+
+        // Publish accumulated total spectrum (rebinned to num_bins_)
+        {
+            auto sum_spectrum_msg = std_msgs::msg::UInt32MultiArray();
+            sum_spectrum_msg.data.resize(num_devices_ * num_bins_, 0);
+
+            // Rebin from DET_CHANNELS to num_bins_
+            int rebin_factor = DET_CHANNELS / num_bins_;
+            for (int dev = 0; dev < num_devices_; dev++) {
+                for (int i = 0; i < num_bins_; i++) {
+                    uint32_t sum = 0;
+                    for (int j = 0; j < rebin_factor; j++) {
+                        int channel_idx = i * rebin_factor + j;
+                        if (channel_idx < DET_CHANNELS) {
+                            sum += accumulated_histograms_[dev * DET_CHANNELS + channel_idx];
+                        }
+                    }
+                    sum_spectrum_msg.data[dev * num_bins_ + i] = sum;
+                }
+            }
+
+            sum_spectrum_pub_->publish(sum_spectrum_msg);
+        }
+
+        // Clear histogram for next integration period (accumulated_histograms_ keeps growing)
+        std::fill(histograms_.begin(), histograms_.end(), 0);
 
         // Publish device status if enabled
         if (publish_device_status_) {
@@ -382,10 +411,12 @@ private:
     std::vector<int> device_gains_;
     std::vector<int> device_biases_;
     std::vector<int> device_llds_;
-    std::vector<uint32_t> histograms_;
+    std::vector<uint32_t> histograms_;            // Current period histogram (cleared each period)
+    std::vector<uint32_t> accumulated_histograms_; // Total accumulated histogram (never cleared)
 
     // Publishers
-    rclcpp::Publisher<std_msgs::msg::Int64>::SharedPtr sum_pub_;
+    rclcpp::Publisher<std_msgs::msg::Int64>::SharedPtr sum_counts_pub_;
+    rclcpp::Publisher<std_msgs::msg::UInt32MultiArray>::SharedPtr sum_spectrum_pub_;
     rclcpp::Publisher<std_msgs::msg::UInt32MultiArray>::SharedPtr info_pub_;
     rclcpp::Publisher<std_msgs::msg::UInt32MultiArray>::SharedPtr raw_pub_;
     rclcpp::Publisher<std_msgs::msg::UInt32MultiArray>::SharedPtr status_pub_;
