@@ -333,16 +333,16 @@ private:
             }
         }
 
-        // Publish individual device data
+        // Publish combined data FIRST (before individual histograms are cleared)
+        if (publish_combined_) {
+            publishCombinedData();
+        }
+
+        // Publish individual device data (this clears histograms)
         if (publish_individual_) {
             for (const auto& [serial, pubs] : device_publishers_) {
                 publishDeviceData(serial, pubs);
             }
-        }
-
-        // Publish combined data
-        if (publish_combined_) {
-            publishCombinedData();
         }
 
         // Publish device status if enabled
